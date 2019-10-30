@@ -4,14 +4,43 @@ import psycopg2
 connect = psycopg2.connect('dbname=news')
 cursor = connect.cursor()
 
+
 def get_top_articles():
     sql = '''select articles.title, count(log.id) as views
         from articles join log
         on log.path = ('/article/' || articles.slug)
         group by(articles.title)
         order by views desc limit 3;'''
-    cursor.execute(sql)
+    try:
+        cursor.execute(sql)
+    except psycopg2.Error as e:
+        pass
     return cursor.fetchall()
+
+
+def get_top_authors():
+    sql = '''select authors.name, count(log.id) as views
+        from authors join articles on authors.id = articles.author join log
+        on log.path = ('/article/' || articles.slug)
+        group by(authors.name)
+        order by views desc;'''
+    try:
+        cursor.execute(sql)
+    except:
+        pass
+    return cursor.fetchall()
+
+
+def get_requests_fail_days():
+    sql = '''select requests.date, count*100::float/requests.requests as errors
+    from requests join errors on requests.date = errors.date
+    where count*100::float/requests.requests > 1;'''
+    try:
+        cursor.execute(sql)
+    except:
+        pass
+    return cursor.fetchall()
+
 
 def print_result(action):
     if action == get_top_articles:
@@ -28,21 +57,6 @@ def print_result(action):
         print("%s - %s%s" % (str(row[0]), str(row[1]), type))
     print('---------------------------------------------------')
 
-def get_top_authors():
-    sql = '''select authors.name, count(log.id) as views
-        from authors join articles on authors.id = articles.author join log
-        on log.path = ('/article/' || articles.slug)
-        group by(authors.name)
-        order by views desc;'''
-    cursor.execute(sql)
-    return cursor.fetchall()
-
-def get_requests_fail_days():
-    sql = '''select requests.date, count*100::float/requests.requests as errors
-    from requests join errors on requests.date = errors.date
-    where count*100::float/requests.requests > 1;'''
-    cursor.execute(sql)
-    return cursor.fetchall()
 
 def close_conn():
     """ Function to close the connection to the database """
@@ -50,6 +64,7 @@ def close_conn():
         cursor.close()
     if connect:
         connect.close()
+
 
 if __name__ == '__main__':
     print_result(get_top_articles)
