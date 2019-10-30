@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 import psycopg2
 
 connect = psycopg2.connect('dbname=news')
